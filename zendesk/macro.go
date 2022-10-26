@@ -55,6 +55,7 @@ type MacroAPI interface {
 	CreateMacro(ctx context.Context, macro Macro) (Macro, error)
 	UpdateMacro(ctx context.Context, macroID int64, macro Macro) (Macro, error)
 	DeleteMacro(ctx context.Context, macroID int64) error
+	ShowChangesToTicket(ctx context.Context, macroID int64) (Ticket, error)
 }
 
 // GetMacros get macro list
@@ -162,4 +163,29 @@ func (z *Client) DeleteMacro(ctx context.Context, macroID int64) error {
 	}
 
 	return nil
+}
+
+// ShowChangesToTicket Returns the changes the macro would make to a ticket. It doesn't actually change a ticket. 
+// You can use the response data in a subsequent API call to the Tickets endpoint to update the ticket.
+// ref: https://developer.zendesk.com/api-reference/ticketing/business-rules/macros/#show-changes-to-ticket
+func (z *Client) ShowChangesToTicket(ctx context.Context, macroID int64) (Ticket, error) {
+	type changeResult struct {
+		Ticket Ticket `json:"result"`
+	}
+
+	var macroChangeResults struct {
+		Result changeResult `json:"result"`
+	}
+
+	body, err := z.get(ctx, fmt.Sprintf("/macros/%d/apply.json", macroID))
+	if err != nil {
+		return Ticket{}, err
+	}
+
+	err = json.Unmarshal(body, &macroChangeResults)
+	if err != nil {
+		return Ticket{}, err
+	}
+
+	return macroChangeResults.Result.Ticket, err
 }

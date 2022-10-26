@@ -1316,6 +1316,21 @@ func (mr *ClientMockRecorder) SearchUsers(arg0, arg1 interface{}) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SearchUsers", reflect.TypeOf((*Client)(nil).SearchUsers), arg0, arg1)
 }
 
+// ShowChangesToTicket mocks base method.
+func (m *Client) ShowChangesToTicket(arg0 context.Context, arg1 int64) (zendesk.Ticket, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ShowChangesToTicket", arg0, arg1)
+	ret0, _ := ret[0].(zendesk.Ticket)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// ShowChangesToTicket indicates an expected call of ShowChangesToTicket.
+func (mr *ClientMockRecorder) ShowChangesToTicket(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ShowChangesToTicket", reflect.TypeOf((*Client)(nil).ShowChangesToTicket), arg0, arg1)
+}
+
 // UpdateAutomation mocks base method.
 func (m *Client) UpdateAutomation(arg0 context.Context, arg1 int64, arg2 zendesk.Automation) (zendesk.Automation, error) {
 	m.ctrl.T.Helper()
