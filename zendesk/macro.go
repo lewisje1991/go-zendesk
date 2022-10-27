@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"strconv"
 	"time"
 )
 
@@ -56,6 +57,7 @@ type MacroAPI interface {
 	UpdateMacro(ctx context.Context, macroID int64, macro Macro) (Macro, error)
 	DeleteMacro(ctx context.Context, macroID int64) error
 	ShowChangesToTicket(ctx context.Context, macroID int64) (Ticket, error)
+	ShowTicketAfterChanges(ctx context.Context, ticketID, macroID int64) (Ticket, error)
 }
 
 // GetMacros get macro list
@@ -165,27 +167,69 @@ func (z *Client) DeleteMacro(ctx context.Context, macroID int64) error {
 	return nil
 }
 
-// ShowChangesToTicket Returns the changes the macro would make to a ticket. It doesn't actually change a ticket. 
-// You can use the response data in a subsequent API call to the Tickets endpoint to update the ticket.
+// Returns the changes the macro would make to a ticket.
+// It doesn't actually change a ticket. You can use the response data in a subsequent API call to the Tickets endpoint to update the ticket.
 // ref: https://developer.zendesk.com/api-reference/ticketing/business-rules/macros/#show-changes-to-ticket
 func (z *Client) ShowChangesToTicket(ctx context.Context, macroID int64) (Ticket, error) {
-	type changeResult struct {
-		Ticket Ticket `json:"result"`
-	}
-
-	var macroChangeResults struct {
-		Result changeResult `json:"result"`
-	}
-
 	body, err := z.get(ctx, fmt.Sprintf("/macros/%d/apply.json", macroID))
 	if err != nil {
 		return Ticket{}, err
 	}
+	return ticketChangesUnmarshal(body)
+}
 
-	err = json.Unmarshal(body, &macroChangeResults)
+// ShowTicketAfterChanges Returns the full ticket object as it would be after applying the macro to the ticket.
+// It doesn't actually change the ticket.
+// ref: https://developer.zendesk.com/api-reference/ticketing/business-rules/macros/#show-ticket-after-changes
+func (z *Client) ShowTicketAfterChanges(ctx context.Context, ticketID, macroID int64) (Ticket, error) {
+	body, err := z.get(ctx, fmt.Sprintf("/tickets/%d/macros/%d/apply", ticketID, macroID))
 	if err != nil {
 		return Ticket{}, err
 	}
 
-	return macroChangeResults.Result.Ticket, err
+	//Zendesk api returns ticket.comment.public as string, not bool so needs custom unmarshalling
+	return ticketChangesUnmarshal(body)
+}
+
+func ticketChangesUnmarshal(data []byte) (Ticket, error) {
+	type results struct {
+		Result struct {
+			Ticket struct {
+				TicketFormID int64    `json:"ticket_form_id"`
+				Subject      string   `json:"subject"`
+				Tags         []string `json:"tags"`
+				Comment      struct {
+					Body   string `json:"body"`
+					Public string `json:"public"`
+				} `json:"comment"`
+				CollaboratorIDs []int64 `json:"collaborator_ids"`
+				FollowerIDs     []int64 `json:"follower_ids"`
+				Status          string  `json:"status"`
+			} `json:"ticket"`
+		} `json:"result"`
+	}
+
+	var r results
+	err := json.Unmarshal(data, &r)
+	if err != nil {
+		return Ticket{}, err
+	}
+
+	commentIsPublic, err := strconv.ParseBool(r.Result.Ticket.Comment.Public)
+	if err != nil {
+		return Ticket{}, err
+	}
+
+	return Ticket{
+		TicketFormID: r.Result.Ticket.TicketFormID,
+		Subject:      r.Result.Ticket.Subject,
+		Tags:         r.Result.Ticket.Tags,
+		Comment: &TicketComment{
+			Body:   r.Result.Ticket.Comment.Body,
+			Public: &commentIsPublic,
+		},
+		CollaboratorIDs: r.Result.Ticket.CollaboratorIDs,
+		FollowerIDs:     r.Result.Ticket.FollowerIDs,
+		Status:          r.Result.Ticket.Status,
+	}, nil
 }
