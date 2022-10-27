@@ -195,7 +195,7 @@ func ticketChangesUnmarshal(data []byte) (Ticket, error) {
 	type results struct {
 		Result struct {
 			Ticket struct {
-				TicketFormID int64    `json:"ticket_form_id"`
+				TicketFormID string   `json:"ticket_form_id"`
 				Subject      string   `json:"subject"`
 				Tags         []string `json:"tags"`
 				Comment      struct {
@@ -220,8 +220,13 @@ func ticketChangesUnmarshal(data []byte) (Ticket, error) {
 		return Ticket{}, err
 	}
 
+	ticketFormId, err := strconv.ParseInt(r.Result.Ticket.TicketFormID, 10, 64)
+	if err != nil {
+		return Ticket{}, err
+	}
+
 	return Ticket{
-		TicketFormID: r.Result.Ticket.TicketFormID,
+		TicketFormID: ticketFormId,
 		Subject:      r.Result.Ticket.Subject,
 		Tags:         r.Result.Ticket.Tags,
 		Comment: &TicketComment{
