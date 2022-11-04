@@ -175,7 +175,57 @@ func (z *Client) ShowChangesToTicket(ctx context.Context, macroID int64) (Ticket
 	if err != nil {
 		return Ticket{}, err
 	}
-	return ticketChangesUnmarshal(body)
+
+	unmarshal := func(data []byte) (Ticket, error) {
+		type results struct {
+			Result struct {
+				Ticket struct {
+					TicketFormID string   `json:"ticket_form_id"`
+					Subject      string   `json:"subject"`
+					Tags         []string `json:"tags"`
+					Comment      struct {
+						Body   string `json:"body"`
+						Public string `json:"public"`
+					} `json:"comment"`
+					CollaboratorIDs []int64 `json:"collaborator_ids"`
+					FollowerIDs     []int64 `json:"follower_ids"`
+					Status          string  `json:"status"`
+				} `json:"ticket"`
+			} `json:"result"`
+		}
+
+		var r results
+		err := json.Unmarshal(data, &r)
+		if err != nil {
+			return Ticket{}, err
+		}
+
+		commentIsPublic, err := strconv.ParseBool(r.Result.Ticket.Comment.Public)
+		if err != nil {
+			return Ticket{}, err
+		}
+
+		ticketFormId, err := strconv.ParseInt(r.Result.Ticket.TicketFormID, 10, 64)
+		if err != nil {
+			return Ticket{}, err
+		}
+
+		return Ticket{
+			TicketFormID: ticketFormId,
+			Subject:      r.Result.Ticket.Subject,
+			Tags:         r.Result.Ticket.Tags,
+			Comment: &TicketComment{
+				Body:   r.Result.Ticket.Comment.Body,
+				Public: &commentIsPublic,
+			},
+			CollaboratorIDs: r.Result.Ticket.CollaboratorIDs,
+			FollowerIDs:     r.Result.Ticket.FollowerIDs,
+			Status:          r.Result.Ticket.Status,
+		}, nil
+	}
+
+	//Zendesk api returns ticket.comment.public as string, not bool so needs custom unmarshalling
+	return unmarshal(body)
 }
 
 // ShowTicketAfterChanges Returns the full ticket object as it would be after applying the macro to the ticket.
@@ -187,54 +237,49 @@ func (z *Client) ShowTicketAfterChanges(ctx context.Context, ticketID, macroID i
 		return Ticket{}, err
 	}
 
+	unmarshal := func(data []byte) (Ticket, error) {
+		type results struct {
+			Result struct {
+				Ticket struct {
+					TicketFormID int64   `json:"ticket_form_id"`
+					Subject      string   `json:"subject"`
+					Tags         []string `json:"tags"`
+					Comment      struct {
+						Body   string `json:"body"`
+						Public string `json:"public"`
+					} `json:"comment"`
+					CollaboratorIDs []int64 `json:"collaborator_ids"`
+					FollowerIDs     []int64 `json:"follower_ids"`
+					Status          string  `json:"status"`
+				} `json:"ticket"`
+			} `json:"result"`
+		}
+
+		var r results
+		err := json.Unmarshal(data, &r)
+		if err != nil {
+			return Ticket{}, err
+		}
+
+		commentIsPublic, err := strconv.ParseBool(r.Result.Ticket.Comment.Public)
+		if err != nil {
+			return Ticket{}, err
+		}
+
+		return Ticket{
+			TicketFormID: r.Result.Ticket.TicketFormID,
+			Subject:      r.Result.Ticket.Subject,
+			Tags:         r.Result.Ticket.Tags,
+			Comment: &TicketComment{
+				Body:   r.Result.Ticket.Comment.Body,
+				Public: &commentIsPublic,
+			},
+			CollaboratorIDs: r.Result.Ticket.CollaboratorIDs,
+			FollowerIDs:     r.Result.Ticket.FollowerIDs,
+			Status:          r.Result.Ticket.Status,
+		}, nil
+	}
+
 	//Zendesk api returns ticket.comment.public as string, not bool so needs custom unmarshalling
-	return ticketChangesUnmarshal(body)
-}
-
-func ticketChangesUnmarshal(data []byte) (Ticket, error) {
-	type results struct {
-		Result struct {
-			Ticket struct {
-				TicketFormID string   `json:"ticket_form_id"`
-				Subject      string   `json:"subject"`
-				Tags         []string `json:"tags"`
-				Comment      struct {
-					Body   string `json:"body"`
-					Public string `json:"public"`
-				} `json:"comment"`
-				CollaboratorIDs []int64 `json:"collaborator_ids"`
-				FollowerIDs     []int64 `json:"follower_ids"`
-				Status          string  `json:"status"`
-			} `json:"ticket"`
-		} `json:"result"`
-	}
-
-	var r results
-	err := json.Unmarshal(data, &r)
-	if err != nil {
-		return Ticket{}, err
-	}
-
-	commentIsPublic, err := strconv.ParseBool(r.Result.Ticket.Comment.Public)
-	if err != nil {
-		return Ticket{}, err
-	}
-
-	ticketFormId, err := strconv.ParseInt(r.Result.Ticket.TicketFormID, 10, 64)
-	if err != nil {
-		return Ticket{}, err
-	}
-
-	return Ticket{
-		TicketFormID: ticketFormId,
-		Subject:      r.Result.Ticket.Subject,
-		Tags:         r.Result.Ticket.Tags,
-		Comment: &TicketComment{
-			Body:   r.Result.Ticket.Comment.Body,
-			Public: &commentIsPublic,
-		},
-		CollaboratorIDs: r.Result.Ticket.CollaboratorIDs,
-		FollowerIDs:     r.Result.Ticket.FollowerIDs,
-		Status:          r.Result.Ticket.Status,
-	}, nil
+	return unmarshal(body)
 }
