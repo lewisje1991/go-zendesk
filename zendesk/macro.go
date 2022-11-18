@@ -187,9 +187,10 @@ func (z *Client) ShowChangesToTicket(ctx context.Context, macroID int64) (Ticket
 						Body   string `json:"body"`
 						Public string `json:"public"`
 					} `json:"comment"`
-					CollaboratorIDs []int64 `json:"collaborator_ids"`
-					FollowerIDs     []int64 `json:"follower_ids"`
-					Status          string  `json:"status"`
+					CollaboratorIDs []int64       `json:"collaborator_ids"`
+					FollowerIDs     []int64       `json:"follower_ids"`
+					Status          string        `json:"status"`
+					CustomFields    []CustomField `json:"custom_fields,omitempty"`
 				} `json:"ticket"`
 			} `json:"result"`
 		}
@@ -241,16 +242,17 @@ func (z *Client) ShowTicketAfterChanges(ctx context.Context, ticketID, macroID i
 		type results struct {
 			Result struct {
 				Ticket struct {
-					TicketFormID int64   `json:"ticket_form_id"`
+					TicketFormID int64    `json:"ticket_form_id"`
 					Subject      string   `json:"subject"`
 					Tags         []string `json:"tags"`
 					Comment      struct {
 						Body   string `json:"body"`
 						Public string `json:"public"`
 					} `json:"comment"`
-					CollaboratorIDs []int64 `json:"collaborator_ids"`
-					FollowerIDs     []int64 `json:"follower_ids"`
-					Status          string  `json:"status"`
+					CollaboratorIDs []int64       `json:"collaborator_ids"`
+					FollowerIDs     []int64       `json:"follower_ids"`
+					Status          string        `json:"status"`
+					CustomFields    []CustomField `json:"custom_fields,omitempty"`
 				} `json:"ticket"`
 			} `json:"result"`
 		}
@@ -277,6 +279,7 @@ func (z *Client) ShowTicketAfterChanges(ctx context.Context, ticketID, macroID i
 			CollaboratorIDs: r.Result.Ticket.CollaboratorIDs,
 			FollowerIDs:     r.Result.Ticket.FollowerIDs,
 			Status:          r.Result.Ticket.Status,
+			CustomFields:    r.Result.Ticket.CustomFields,
 		}, nil
 	}
 
