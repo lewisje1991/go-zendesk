@@ -93,6 +93,13 @@ type Ticket struct {
 	CreatedAt           *time.Time `json:"created_at,omitempty"`
 	UpdatedAt           *time.Time `json:"updated_at,omitempty"`
 
+	SideConversation struct {
+		Subject string `json:"subject"`
+		Message string `json:"message"`
+		Recipients string `json:"recipients"`
+		ContextType string `json:"context_type"`
+	} `json:"side_conversation"`
+	
 	// Collaborators is POST only
 	Collaborators *Collaborators `json:"collaborators,omitempty"`
 

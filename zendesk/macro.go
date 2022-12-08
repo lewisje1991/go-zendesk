@@ -26,8 +26,8 @@ type Macro struct {
 //
 // ref: https://develop.zendesk.com/hc/en-us/articles/360056760874-Support-API-Actions-reference
 type MacroAction struct {
-	Field string `json:"field"`
-	Value string `json:"value"`
+	Field string   `json:"field"`
+	Value []string `json:"value"`
 }
 
 // MacroListOptions is parameters used of GetMacros
@@ -180,10 +180,16 @@ func (z *Client) ShowChangesToTicket(ctx context.Context, macroID int64) (Ticket
 		type results struct {
 			Result struct {
 				Ticket struct {
-					TicketFormID string   `json:"ticket_form_id"`
-					Subject      string   `json:"subject"`
-					Tags         []string `json:"tags"`
-					Comment      struct {
+					TicketFormID     string `json:"ticket_form_id"`
+					SideConversation struct {
+						Subject     string `json:"subject"`
+						Message     string `json:"message"`
+						Recipients  string `json:"recipients"`
+						ContextType string `json:"context_type"`
+					} `json:"side_conversation"`
+					Subject string   `json:"subject"`
+					Tags    []string `json:"tags"`
+					Comment struct {
 						Body   string `json:"body"`
 						Public string `json:"public"`
 					} `json:"comment"`
@@ -212,9 +218,10 @@ func (z *Client) ShowChangesToTicket(ctx context.Context, macroID int64) (Ticket
 		}
 
 		return Ticket{
-			TicketFormID: ticketFormId,
-			Subject:      r.Result.Ticket.Subject,
-			Tags:         r.Result.Ticket.Tags,
+			TicketFormID:     ticketFormId,
+			SideConversation: r.Result.Ticket.SideConversation,
+			Subject:          r.Result.Ticket.Subject,
+			Tags:             r.Result.Ticket.Tags,
 			Comment: &TicketComment{
 				Body:   r.Result.Ticket.Comment.Body,
 				Public: &commentIsPublic,
