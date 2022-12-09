@@ -93,13 +93,8 @@ type Ticket struct {
 	CreatedAt           *time.Time `json:"created_at,omitempty"`
 	UpdatedAt           *time.Time `json:"updated_at,omitempty"`
 
-	SideConversation struct {
-		Subject string `json:"subject"`
-		Message string `json:"message"`
-		Recipients string `json:"recipients"`
-		ContextType string `json:"context_type"`
-	} `json:"side_conversation"`
-	
+	SideConversation TicketSideConversation `json:"side_conversation,omitempty"`
+
 	// Collaborators is POST only
 	Collaborators *Collaborators `json:"collaborators,omitempty"`
 
@@ -110,6 +105,13 @@ type Ticket struct {
 	Requester *Requester `json:"requester,omitempty"`
 
 	// TODO: TicketAudit (POST only) #126
+}
+
+type TicketSideConversation struct {
+	Subject     string `json:"subject"`
+	Message     string `json:"message"`
+	Recipients  string `json:"recipients"`
+	ContextType string `json:"context_type"`
 }
 
 // Requester is the struct that can be passed to create a new requester on ticket creation
