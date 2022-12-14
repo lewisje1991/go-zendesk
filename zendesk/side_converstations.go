@@ -64,8 +64,6 @@ func (z *Client) CreateSideConversation(ctx context.Context, ticketID int64, m M
 		SideConversation SideConversation `json:"side_conversation"`
 	}
 
-	fmt.Println(string(body))
-
 	err = json.Unmarshal(body, &result)
 	if err != nil {
 		return SideConversation{}, err
